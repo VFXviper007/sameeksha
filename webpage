@@ -1,0 +1,753 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Cultural Fest Dashboard</title>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/3.9.1/chart.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/PapaParse/5.4.1/papaparse.min.js"></script>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, Cantarell, sans-serif;
+            background: #f8fafc;
+            min-height: 100vh;
+        }
+
+        .container {
+            max-width: 1200px;
+            margin: 0 auto;
+            padding: 20px;
+        }
+
+        .header {
+            text-align: center;
+            margin-bottom: 30px;
+            background: white;
+            padding: 40px;
+            border-radius: 12px;
+            box-shadow: 0 2px 10px rgba(0, 0, 0, 0.05);
+            border: 1px solid #e2e8f0;
+        }
+
+        .header h1 {
+            color: #1e40af;
+            font-size: 2.5rem;
+            margin-bottom: 10px;
+            font-weight: 700;
+        }
+
+        .header p {
+            color: #64748b;
+            font-size: 1.1rem;
+        }
+
+        .nav-tabs {
+            display: flex;
+            justify-content: center;
+            margin-bottom: 30px;
+            background: white;
+            border-radius: 8px;
+            padding: 6px;
+            box-shadow: 0 2px 10px rgba(0, 0, 0, 0.05);
+            border: 1px solid #e2e8f0;
+        }
+
+        .nav-tab {
+            padding: 12px 24px;
+            margin: 0 2px;
+            background: transparent;
+            border: none;
+            border-radius: 6px;
+            cursor: pointer;
+            font-weight: 500;
+            font-size: 0.95rem;
+            transition: all 0.2s ease;
+            color: #64748b;
+        }
+
+        .nav-tab:hover {
+            background: #f1f5f9;
+            color: #1e40af;
+        }
+
+        .nav-tab.active {
+            background: #1e40af;
+            color: white;
+            font-weight: 600;
+        }
+
+        .tab-content {
+            display: none;
+        }
+
+        .tab-content.active {
+            display: block;
+        }
+
+        .card {
+            background: white;
+            border-radius: 12px;
+            padding: 30px;
+            margin-bottom: 25px;
+            box-shadow: 0 2px 10px rgba(0, 0, 0, 0.05);
+            border: 1px solid #e2e8f0;
+        }
+
+        .card h2 {
+            color: #1e40af;
+            margin-bottom: 25px;
+            font-size: 1.8rem;
+            font-weight: 600;
+        }
+
+        .leaderboard {
+            display: grid;
+            gap: 15px;
+        }
+
+        .house-item {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            padding: 20px 25px;
+            border-radius: 8px;
+            font-weight: 600;
+            font-size: 1.1rem;
+            transition: transform 0.2s ease, box-shadow 0.2s ease;
+            background: white;
+            border: 2px solid #e2e8f0;
+            color: #334155;
+        }
+
+        .house-item:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 4px 20px rgba(0, 0, 0, 0.08);
+            border-color: #cbd5e1;
+        }
+
+        .house-ganga {
+            border-left: 4px solid #FFA500;
+        }
+        .house-yamuna {
+            border-left: 4px solid #3b82f6;
+        }
+        .house-kaveri {
+            border-left: 4px solid #10b981;
+        }
+        .house-krishna {
+            border-left: 4px solid #ef4444;
+        }
+
+        .points {
+            font-size: 1.3rem;
+            font-weight: 700;
+            padding: 8px 16px;
+            background: #f1f5f9;
+            border-radius: 20px;
+            color: #1e40af;
+        }
+
+        .filters {
+            display: flex;
+            gap: 15px;
+            margin-bottom: 25px;
+            flex-wrap: wrap;
+        }
+
+        .filter-group {
+            display: flex;
+            flex-direction: column;
+            gap: 8px;
+        }
+
+        .filter-group label {
+            font-weight: 600;
+            color: #1e40af;
+            font-size: 0.9rem;
+        }
+
+        select {
+            padding: 12px 16px;
+            border: 2px solid #e2e8f0;
+            border-radius: 6px;
+            font-size: 1rem;
+            background: white;
+            transition: border-color 0.2s ease, box-shadow 0.2s ease;
+            color: #334155;
+        }
+
+        select:focus {
+            outline: none;
+            border-color: #3b82f6;
+            box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.1);
+        }
+
+        .results-table {
+            overflow-x: auto;
+        }
+
+        table {
+            width: 100%;
+            border-collapse: collapse;
+            margin-top: 15px;
+        }
+
+        th, td {
+            padding: 15px 12px;
+            text-align: left;
+            border-bottom: 1px solid #e2e8f0;
+        }
+
+        th {
+            background: #f8fafc;
+            font-weight: 600;
+            color: #1e40af;
+            font-size: 0.95rem;
+        }
+
+        tr:hover {
+            background: #f8fafc;
+        }
+
+        .position-1 {
+            background: #fbbf24;
+            color: white;
+            font-weight: bold;
+            border-radius: 4px;
+            padding: 4px 8px;
+        }
+        .position-2 {
+            background: #9ca3af;
+            color: white;
+            font-weight: bold;
+            border-radius: 4px;
+            padding: 4px 8px;
+        }
+        .position-3 {
+            background: #d97706;
+            color: white;
+            font-weight: bold;
+            border-radius: 4px;
+            padding: 4px 8px;
+        }
+
+        .chart-container {
+            position: relative;
+            height: 400px;
+            margin-top: 20px;
+        }
+
+        .category-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+            gap: 20px;
+        }
+
+        .category-card {
+            background: white;
+            border-radius: 8px;
+            padding: 25px;
+            text-align: center;
+            box-shadow: 0 2px 10px rgba(0, 0, 0, 0.05);
+            border: 1px solid #e2e8f0;
+            transition: transform 0.2s ease, box-shadow 0.2s ease;
+        }
+
+        .category-card:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 4px 20px rgba(0, 0, 0, 0.08);
+        }
+
+        .category-title {
+            font-size: 1.3rem;
+            font-weight: 700;
+            margin-bottom: 10px;
+            color: #1e40af;
+        }
+
+        .category-classes {
+            font-size: 0.9rem;
+            color: #64748b;
+            margin-bottom: 15px;
+        }
+
+        .leading-house {
+            padding: 12px 20px;
+            border-radius: 6px;
+            font-weight: 600;
+            font-size: 1rem;
+            margin-top: 10px;
+            background: #f1f5f9;
+            color: #1e40af;
+            border: 2px solid #e2e8f0;
+        }
+
+        .loading {
+            text-align: center;
+            padding: 40px;
+            color: #64748b;
+            font-size: 1.1rem;
+        }
+
+        .refresh-btn {
+            background: #1e40af;
+            color: white;
+            border: none;
+            padding: 12px 24px;
+            border-radius: 6px;
+            font-size: 1rem;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.2s ease;
+        }
+
+        .refresh-btn:hover {
+            background: #1d4ed8;
+            transform: translateY(-1px);
+        }
+
+        @media (max-width: 768px) {
+            .nav-tabs {
+                flex-wrap: wrap;
+                gap: 8px;
+            }
+
+            .nav-tab {
+                flex: 1;
+                min-width: 120px;
+                text-align: center;
+            }
+
+            .filters {
+                flex-direction: column;
+            }
+
+            .house-item {
+                flex-direction: column;
+                gap: 10px;
+                text-align: center;
+            }
+
+            .header h1 {
+                font-size: 2rem;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="header">
+            <h1>🎭 Cultural Fest Dashboard</h1>
+            <p>Live Results & Leaderboards</p>
+            <button class="refresh-btn" onclick="loadAllData()">🔄 Refresh Data</button>
+        </div>
+
+        <nav class="nav-tabs">
+            <button class="nav-tab active" onclick="showTab('home')">🏠 Home</button>
+            <button class="nav-tab" onclick="showTab('results')">📊 Results</button>
+            <button class="nav-tab" onclick="showTab('categories')">🎯 Categories</button>
+            <button class="nav-tab" onclick="showTab('charts')">📈 Charts</button>
+        </nav>
+
+        <div id="home" class="tab-content active">
+            <div class="card">
+                <h2>🏆 House Leaderboard</h2>
+                <div id="leaderboard" class="leaderboard">
+                    <div class="loading">Loading results...</div>
+                </div>
+            </div>
+        </div>
+
+        <div id="results" class="tab-content">
+            <div class="card">
+                <h2>📋 Results Viewer</h2>
+                <div class="filters">
+                    <div class="filter-group">
+                        <label for="categoryFilter">Category:</label>
+                        <select id="categoryFilter" onchange="filterResults()">
+                            <option value="">All Categories</option>
+                            <option value="cat1">Category 1 (Classes 1-2)</option>
+                            <option value="cat2">Category 2 (Classes 3-5)</option>
+                            <option value="cat3">Category 3 (Classes 6-8)</option>
+                            <option value="cat4">Category 4 (Classes 9-10)</option>
+                            <option value="cat5">Category 5 (Classes 11-12)</option>
+                        </select>
+                    </div>
+                    <div class="filter-group">
+                        <label for="typeFilter">Type:</label>
+                        <select id="typeFilter" onchange="filterResults()">
+                            <option value="">All Types</option>
+                            <option value="individual">Individual</option>
+                            <option value="group">Group</option>
+                        </select>
+                    </div>
+                </div>
+                <div class="results-table">
+                    <table id="resultsTable">
+                        <thead>
+                            <tr>
+                                <th>Category</th>
+                                <th>Type</th>
+                                <th>Name/Team</th>
+                                <th>Class</th>
+                                <th>House</th>
+                                <th>Position</th>
+                            </tr>
+                        </thead>
+                        <tbody id="resultsBody">
+                            <tr><td colspan="6" class="loading">Loading results...</td></tr>
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+
+        <div id="categories" class="tab-content">
+            <div class="card">
+                <h2>🎯 Category Breakdown</h2>
+                <div id="categoryBreakdown" class="category-grid">
+                    <div class="loading">Loading category data...</div>
+                </div>
+            </div>
+        </div>
+
+        <div id="charts" class="tab-content">
+            <div class="card">
+                <h2>📈 House Points Visualization</h2>
+                <div class="chart-container">
+                    <canvas id="pointsChart"></canvas>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        // Global data storage
+        let allData = {
+            individual: {
+                cat1: [], cat2: [], cat3: [], cat4: [], cat5: []
+            },
+            group: {
+                cat1: [], cat2: [], cat3: [], cat4: [], cat5: []
+            }
+        };
+
+        // House configuration
+        const houses = {
+            'Ganga': { color: '#FFA500', class: 'house-ganga' },
+            'Yamuna': { color: '#3b82f6', class: 'house-yamuna' },
+            'Kaveri': { color: '#10b981', class: 'house-kaveri' },
+            'Krishna': { color: '#ef4444', class: 'house-krishna' }
+        };
+
+        const categories = {
+            cat1: { name: 'Category 1', classes: 'Classes 1-2' },
+            cat2: { name: 'Category 2', classes: 'Classes 3-5' },
+            cat3: { name: 'Category 3', classes: 'Classes 6-8' },
+            cat4: { name: 'Category 4', classes: 'Classes 9-10' },
+            cat5: { name: 'Category 5', classes: 'Classes 11-12' }
+        };
+
+        // Tab navigation
+        function showTab(tabName) {
+            // Hide all tabs
+            document.querySelectorAll('.tab-content').forEach(tab => {
+                tab.classList.remove('active');
+            });
+            document.querySelectorAll('.nav-tab').forEach(btn => {
+                btn.classList.remove('active');
+            });
+
+            // Show selected tab
+            document.getElementById(tabName).classList.add('active');
+            event.target.classList.add('active');
+
+            // Refresh chart if charts tab is selected
+            if (tabName === 'charts') {
+                setTimeout(updateChart, 100);
+            }
+        }
+
+        // Load CSV data
+        async function loadCSV(filename) {
+            try {
+                const response = await fetch(filename);
+                if (!response.ok) {
+                    console.warn(`Could not load ${filename}: ${response.status}`);
+                    return [];
+                }
+                const csvText = await response.text();
+                const result = Papa.parse(csvText, {
+                    header: true,
+                    skipEmptyLines: true,
+                    dynamicTyping: false,
+                    delimitersToGuess: [',', '\t', '|', ';']
+                });
+
+                // Clean headers
+                if (result.data.length > 0) {
+                    const cleanedData = result.data.map(row => {
+                        const cleanedRow = {};
+                        Object.keys(row).forEach(key => {
+                            const cleanKey = key.trim();
+                            cleanedRow[cleanKey] = row[key] ? row[key].toString().trim() : '';
+                        });
+                        return cleanedRow;
+                    });
+                    return cleanedData.filter(row =>
+                        Object.values(row).some(value => value !== '')
+                    );
+                }
+                return [];
+            } catch (error) {
+                console.error(`Error loading ${filename}:`, error);
+                return [];
+            }
+        }
+
+        // Load all data
+        async function loadAllData() {
+            const loadingElements = document.querySelectorAll('.loading');
+            loadingElements.forEach(el => el.textContent = 'Loading...');
+
+            try {
+                // Load individual results
+                for (let i = 1; i <= 5; i++) {
+                    const catKey = `cat${i}`;
+                    allData.individual[catKey] = await loadCSV(`${catKey}_individual.csv`);
+                    allData.group[catKey] = await loadCSV(`${catKey}_group.csv`);
+                }
+
+                updateLeaderboard();
+                updateResults();
+                updateCategoryBreakdown();
+                updateChart();
+            } catch (error) {
+                console.error('Error loading data:', error);
+                loadingElements.forEach(el => el.textContent = 'Error loading data. Please check if CSV files are available.');
+            }
+        }
+
+        // Calculate points for houses
+        function calculateHousePoints() {
+            const housePoints = { Ganga: 0, Yamuna: 0, Kaveri: 0, Krishna: 0 };
+
+            // Only individual events count for points
+            Object.keys(allData.individual).forEach(category => {
+                allData.individual[category].forEach(result => {
+                    const house = result.house;
+                    const position = parseInt(result.position);
+
+                    if (house && housePoints.hasOwnProperty(house) && position) {
+                        if (position === 1) housePoints[house] += 5;
+                        else if (position === 2) housePoints[house] += 3;
+                        else if (position === 3) housePoints[house] += 1;
+                    }
+                });
+            });
+
+            return housePoints;
+        }
+
+        // Update leaderboard
+        function updateLeaderboard() {
+            const housePoints = calculateHousePoints();
+            const sortedHouses = Object.entries(housePoints)
+                .sort(([,a], [,b]) => b - a);
+
+            const leaderboard = document.getElementById('leaderboard');
+            leaderboard.innerHTML = sortedHouses.map(([house, points], index) => `
+                <div class="house-item ${houses[house].class}">
+                    <span>${index + 1}. ${house}</span>
+                    <span class="points">${points} pts</span>
+                </div>
+            `).join('');
+        }
+
+        // Update results table
+        function updateResults() {
+            const resultsBody = document.getElementById('resultsBody');
+            const allResults = [];
+
+            // Combine all data
+            Object.keys(allData.individual).forEach(category => {
+                allData.individual[category].forEach(result => {
+                    allResults.push({
+                        category: categories[category].name,
+                        type: 'Individual',
+                        name: result.name || 'N/A',
+                        class: result.class || 'N/A',
+                        house: result.house || 'N/A',
+                        position: result.position || 'N/A'
+                    });
+                });
+
+                allData.group[category].forEach(result => {
+                    allResults.push({
+                        category: categories[category].name,
+                        type: 'Group',
+                        name: result.team_name || 'N/A',
+                        class: result.class || 'N/A',
+                        house: result.house || 'N/A',
+                        position: 'N/A'
+                    });
+                });
+            });
+
+            resultsBody.innerHTML = allResults.map(result => `
+                <tr>
+                    <td>${result.category}</td>
+                    <td>${result.type}</td>
+                    <td>${result.name}</td>
+                    <td>${result.class}</td>
+                    <td style="color: ${houses[result.house]?.color || '#000'}">${result.house}</td>
+                    <td>
+                        ${result.position !== 'N/A' ?
+                            `<span class="position-${result.position}">${result.position}</span>` :
+                            result.position
+                        }
+                    </td>
+                </tr>
+            `).join('');
+        }
+
+        // Filter results
+        function filterResults() {
+            const categoryFilter = document.getElementById('categoryFilter').value;
+            const typeFilter = document.getElementById('typeFilter').value;
+            const rows = document.querySelectorAll('#resultsBody tr');
+
+            rows.forEach(row => {
+                const cells = row.querySelectorAll('td');
+                if (cells.length < 2) return;
+
+                const category = cells[0].textContent.toLowerCase();
+                const type = cells[1].textContent.toLowerCase();
+
+                let showRow = true;
+
+                if (categoryFilter) {
+                    const catName = categories[categoryFilter].name.toLowerCase();
+                    if (!category.includes(catName.split(' ')[1])) showRow = false;
+                }
+
+                if (typeFilter && !type.includes(typeFilter)) showRow = false;
+
+                row.style.display = showRow ? '' : 'none';
+            });
+        }
+
+        // Update category breakdown
+        function updateCategoryBreakdown() {
+            const breakdown = document.getElementById('categoryBreakdown');
+            const categoryData = Object.keys(categories).map(catKey => {
+                const housePoints = { Ganga: 0, Yamuna: 0, Kaveri: 0, Krishna: 0 };
+
+                // Calculate points for this category
+                allData.individual[catKey].forEach(result => {
+                    const house = result.house;
+                    const position = parseInt(result.position);
+
+                    if (house && housePoints.hasOwnProperty(house) && position) {
+                        if (position === 1) housePoints[house] += 5;
+                        else if (position === 2) housePoints[house] += 3;
+                        else if (position === 3) housePoints[house] += 1;
+                    }
+                });
+
+                const leadingHouse = Object.entries(housePoints)
+                    .sort(([,a], [,b]) => b - a)[0];
+
+                return {
+                    category: catKey,
+                    name: categories[catKey].name,
+                    classes: categories[catKey].classes,
+                    leadingHouse: leadingHouse[0],
+                    leadingPoints: leadingHouse[1]
+                };
+            });
+
+            breakdown.innerHTML = categoryData.map(cat => `
+                <div class="category-card">
+                    <div class="category-title">${cat.name}</div>
+                    <div class="category-classes">${cat.classes}</div>
+                    <div class="leading-house ${houses[cat.leadingHouse].class}">
+                        🏆 ${cat.leadingHouse} Leading
+                        <br>
+                        <small>${cat.leadingPoints} points</small>
+                    </div>
+                </div>
+            `).join('');
+        }
+
+        // Update chart
+        function updateChart() {
+            const ctx = document.getElementById('pointsChart');
+            if (!ctx) return;
+
+            const housePoints = calculateHousePoints();
+
+            // Destroy existing chart if it exists
+            if (window.pointsChart instanceof Chart) {
+                window.pointsChart.destroy();
+            }
+
+            window.pointsChart = new Chart(ctx, {
+                type: 'bar',
+                data: {
+                    labels: Object.keys(housePoints),
+                    datasets: [{
+                        label: 'Points',
+                        data: Object.values(housePoints),
+                        backgroundColor: Object.keys(housePoints).map(house => houses[house].color),
+                        borderColor: Object.keys(housePoints).map(house => houses[house].color),
+                        borderWidth: 2,
+                        borderRadius: 8
+                    }]
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    plugins: {
+                        legend: {
+                            display: false
+                        },
+                        title: {
+                            display: true,
+                            text: 'House Points Distribution',
+                            font: {
+                                size: 18,
+                                weight: 'bold'
+                            }
+                        }
+                    },
+                    scales: {
+                        y: {
+                            beginAtZero: true,
+                            ticks: {
+                                stepSize: 1
+                            }
+                        }
+                    },
+                    animation: {
+                        duration: 1000,
+                        easing: 'easeInOutQuart'
+                    }
+                }
+            });
+        }
+
+        // Auto-refresh every 30 seconds
+        setInterval(loadAllData, 30000);
+
+        // Initial load
+        document.addEventListener('DOMContentLoaded', loadAllData);
+    </script>
+</body>
+</html>
