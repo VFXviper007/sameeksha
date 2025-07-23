@@ -295,6 +295,23 @@
             font-size: 1.1rem;
         }
 
+        .refresh-btn {
+            background: #1e40af;
+            color: white;
+            border: none;
+            padding: 12px 24px;
+            border-radius: 6px;
+            font-size: 1rem;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.2s ease;
+        }
+
+        .refresh-btn:hover {
+            background: #1d4ed8;
+            transform: translateY(-1px);
+        }
+
         @media (max-width: 768px) {
             .nav-tabs {
                 flex-wrap: wrap;
@@ -326,8 +343,9 @@
 <body>
     <div class="container">
         <div class="header">
-            <h1>SAMEEKSHA</h1>
+            <h1>Sameeksha</h1>
             <p>Live Results & Leaderboards</p>
+            <button class="refresh-btn" onclick="loadAllData()">🔄 Refresh Data</button>
         </div>
 
         <nav class="nav-tabs">
@@ -350,12 +368,6 @@
             <div class="card">
                 <h2>📋 Results Viewer</h2>
                 <div class="filters">
-                    <div class="filter-group">
-                        <label for="eventFilter">Event:</label>
-                        <select id="eventFilter" onchange="filterResults()">
-                            <option value="">All Events</option>
-                        </select>
-                    </div>
                     <div class="filter-group">
                         <label for="categoryFilter">Category:</label>
                         <select id="categoryFilter" onchange="filterResults()">
@@ -425,8 +437,6 @@
                 cat1: [], cat2: [], cat3: [], cat4: [], cat5: []
             }
         };
-
-        let allResults = []; // Store all results for filtering
 
         // House configuration
         const houses = {
@@ -525,7 +535,6 @@
 
                 updateLeaderboard();
                 updateResults();
-                updateEventFilter();
                 updateCategoryBreakdown();
                 updateChart();
             } catch (error) {
@@ -570,37 +579,10 @@
             `).join('');
         }
 
-        // Update event filter dropdown
-        function updateEventFilter() {
-            const eventSet = new Set();
-            
-            // Collect all unique event names
-            Object.keys(allData.individual).forEach(category => {
-                allData.individual[category].forEach(result => {
-                    if (result.event_name && result.event_name.trim() !== '') {
-                        eventSet.add(result.event_name.trim());
-                    }
-                });
-
-                allData.group[category].forEach(result => {
-                    if (result.event_name && result.event_name.trim() !== '') {
-                        eventSet.add(result.event_name.trim());
-                    }
-                });
-            });
-
-            // Sort events alphabetically
-            const sortedEvents = Array.from(eventSet).sort();
-
-            // Update the event filter dropdown
-            const eventFilter = document.getElementById('eventFilter');
-            eventFilter.innerHTML = '<option value="">All Events</option>' +
-                sortedEvents.map(event => `<option value="${event}">${event}</option>`).join('');
-        }
-
         // Update results table
         function updateResults() {
-            allResults = []; // Clear previous results
+            const resultsBody = document.getElementById('resultsBody');
+            const allResults = [];
 
             // Combine all data
             Object.keys(allData.individual).forEach(category => {
@@ -629,24 +611,6 @@
                 });
             });
 
-            // Sort results primarily by event name, then by position within each event
-            allResults.sort((a, b) => {
-                // First sort by event name alphabetically
-                if (a.event !== b.event) {
-                    return a.event.localeCompare(b.event);
-                }
-                // Then sort by position within the same event (1st, 2nd, 3rd, etc.)
-                const posA = parseInt(a.position) || 999;
-                const posB = parseInt(b.position) || 999;
-                return posA - posB;
-            });
-
-            renderResults();
-        }
-
-        // Render results table
-        function renderResults() {
-            const resultsBody = document.getElementById('resultsBody');
             resultsBody.innerHTML = allResults.map(result => `
                 <tr>
                     <td>${result.event}</td>
@@ -666,51 +630,28 @@
 
         // Filter results
         function filterResults() {
-            const eventFilter = document.getElementById('eventFilter').value;
             const categoryFilter = document.getElementById('categoryFilter').value;
             const typeFilter = document.getElementById('typeFilter').value;
+            const rows = document.querySelectorAll('#resultsBody tr');
 
-            let filteredResults = allResults.filter(result => {
-                let showResult = true;
+            rows.forEach(row => {
+                const cells = row.querySelectorAll('td');
+                if (cells.length < 2) return;
 
-                // Event filter
-                if (eventFilter && result.event !== eventFilter) {
-                    showResult = false;
-                }
+                const category = cells[0].textContent.toLowerCase();
+                const type = cells[1].textContent.toLowerCase();
 
-                // Category filter
+                let showRow = true;
+
                 if (categoryFilter) {
-                    const catName = categories[categoryFilter].name;
-                    if (result.category !== catName) {
-                        showResult = false;
-                    }
+                    const catName = categories[categoryFilter].name.toLowerCase();
+                    if (!category.includes(catName.split(' ')[1])) showRow = false;
                 }
 
-                // Type filter
-                if (typeFilter && !result.type.toLowerCase().includes(typeFilter)) {
-                    showResult = false;
-                }
+                if (typeFilter && !type.includes(typeFilter)) showRow = false;
 
-                return showResult;
+                row.style.display = showRow ? '' : 'none';
             });
-
-            // Update the table with filtered results
-            const resultsBody = document.getElementById('resultsBody');
-            resultsBody.innerHTML = filteredResults.map(result => `
-                <tr>
-                    <td>${result.event}</td>
-                    <td>${result.type}</td>
-                    <td>${result.name}</td>
-                    <td>${result.class}</td>
-                    <td style="color: ${houses[result.house]?.color || '#000'}">${result.house}</td>
-                    <td>
-                        ${result.position !== 'N/A' && !isNaN(parseInt(result.position)) ?
-                            `<span class="position-${result.position}">${result.position}</span>` :
-                            result.position
-                        }
-                    </td>
-                </tr>
-            `).join('');
         }
 
         // Update category breakdown
