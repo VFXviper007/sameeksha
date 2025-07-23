@@ -295,23 +295,6 @@
             font-size: 1.1rem;
         }
 
-        .refresh-btn {
-            background: #1e40af;
-            color: white;
-            border: none;
-            padding: 12px 24px;
-            border-radius: 6px;
-            font-size: 1rem;
-            font-weight: 600;
-            cursor: pointer;
-            transition: all 0.2s ease;
-        }
-
-        .refresh-btn:hover {
-            background: #1d4ed8;
-            transform: translateY(-1px);
-        }
-
         @media (max-width: 768px) {
             .nav-tabs {
                 flex-wrap: wrap;
@@ -343,9 +326,8 @@
 <body>
     <div class="container">
         <div class="header">
-            <h1>🎭 Cultural Fest Dashboard</h1>
+            <h1>SAMEEKSHA</h1>
             <p>Live Results & Leaderboards</p>
-            <button class="refresh-btn" onclick="loadAllData()">🔄 Refresh Data</button>
         </div>
 
         <nav class="nav-tabs">
@@ -368,6 +350,12 @@
             <div class="card">
                 <h2>📋 Results Viewer</h2>
                 <div class="filters">
+                    <div class="filter-group">
+                        <label for="eventFilter">Event:</label>
+                        <select id="eventFilter" onchange="filterResults()">
+                            <option value="">All Events</option>
+                        </select>
+                    </div>
                     <div class="filter-group">
                         <label for="categoryFilter">Category:</label>
                         <select id="categoryFilter" onchange="filterResults()">
@@ -392,9 +380,9 @@
                     <table id="resultsTable">
                         <thead>
                             <tr>
-                                <th>Category</th>
+                                <th>Event</th>
                                 <th>Type</th>
-                                <th>Name/Team</th>
+                                <th>Student/Team</th>
                                 <th>Class</th>
                                 <th>House</th>
                                 <th>Position</th>
@@ -438,6 +426,8 @@
             }
         };
 
+        let allResults = []; // Store all results for filtering
+
         // House configuration
         const houses = {
             'Ganga': { color: '#FFA500', class: 'house-ganga' },
@@ -474,7 +464,7 @@
             }
         }
 
-        // Load CSV data
+        // Load CSV data with updated column mapping
         async function loadCSV(filename) {
             try {
                 const response = await fetch(filename);
@@ -490,7 +480,7 @@
                     delimitersToGuess: [',', '\t', '|', ';']
                 });
 
-                // Clean headers
+                // Clean headers and map to expected format
                 if (result.data.length > 0) {
                     const cleanedData = result.data.map(row => {
                         const cleanedRow = {};
@@ -498,7 +488,16 @@
                             const cleanKey = key.trim();
                             cleanedRow[cleanKey] = row[key] ? row[key].toString().trim() : '';
                         });
-                        return cleanedRow;
+                        
+                        // Map CSV columns to expected format
+                        return {
+                            event_name: cleanedRow.event_name || cleanedRow.Event || cleanedRow.event || '',
+                            name: cleanedRow.student_name || cleanedRow.name || cleanedRow.Name || cleanedRow.Student || '',
+                            team_name: cleanedRow.team_name || cleanedRow.Team || cleanedRow.team || '',
+                            class: cleanedRow.class_num || cleanedRow.class || cleanedRow.Class || cleanedRow.grade || '',
+                            house: cleanedRow.house || cleanedRow.House || '',
+                            position: cleanedRow.position || cleanedRow.Position || cleanedRow.rank || ''
+                        };
                     });
                     return cleanedData.filter(row =>
                         Object.values(row).some(value => value !== '')
@@ -526,6 +525,7 @@
 
                 updateLeaderboard();
                 updateResults();
+                updateEventFilter();
                 updateCategoryBreakdown();
                 updateChart();
             } catch (error) {
@@ -570,10 +570,37 @@
             `).join('');
         }
 
+        // Update event filter dropdown
+        function updateEventFilter() {
+            const eventSet = new Set();
+            
+            // Collect all unique event names
+            Object.keys(allData.individual).forEach(category => {
+                allData.individual[category].forEach(result => {
+                    if (result.event_name && result.event_name.trim() !== '') {
+                        eventSet.add(result.event_name.trim());
+                    }
+                });
+
+                allData.group[category].forEach(result => {
+                    if (result.event_name && result.event_name.trim() !== '') {
+                        eventSet.add(result.event_name.trim());
+                    }
+                });
+            });
+
+            // Sort events alphabetically
+            const sortedEvents = Array.from(eventSet).sort();
+
+            // Update the event filter dropdown
+            const eventFilter = document.getElementById('eventFilter');
+            eventFilter.innerHTML = '<option value="">All Events</option>' +
+                sortedEvents.map(event => `<option value="${event}">${event}</option>`).join('');
+        }
+
         // Update results table
         function updateResults() {
-            const resultsBody = document.getElementById('resultsBody');
-            const allResults = [];
+            allResults = []; // Clear previous results
 
             // Combine all data
             Object.keys(allData.individual).forEach(category => {
@@ -581,6 +608,7 @@
                     allResults.push({
                         category: categories[category].name,
                         type: 'Individual',
+                        event: result.event_name || 'N/A',
                         name: result.name || 'N/A',
                         class: result.class || 'N/A',
                         house: result.house || 'N/A',
@@ -592,23 +620,42 @@
                     allResults.push({
                         category: categories[category].name,
                         type: 'Group',
-                        name: result.team_name || 'N/A',
+                        event: result.event_name || 'N/A',
+                        name: result.team_name || result.name || 'N/A',
                         class: result.class || 'N/A',
                         house: result.house || 'N/A',
-                        position: 'N/A'
+                        position: result.position || 'N/A'
                     });
                 });
             });
 
+            // Sort results primarily by event name, then by position within each event
+            allResults.sort((a, b) => {
+                // First sort by event name alphabetically
+                if (a.event !== b.event) {
+                    return a.event.localeCompare(b.event);
+                }
+                // Then sort by position within the same event (1st, 2nd, 3rd, etc.)
+                const posA = parseInt(a.position) || 999;
+                const posB = parseInt(b.position) || 999;
+                return posA - posB;
+            });
+
+            renderResults();
+        }
+
+        // Render results table
+        function renderResults() {
+            const resultsBody = document.getElementById('resultsBody');
             resultsBody.innerHTML = allResults.map(result => `
                 <tr>
-                    <td>${result.category}</td>
+                    <td>${result.event}</td>
                     <td>${result.type}</td>
                     <td>${result.name}</td>
                     <td>${result.class}</td>
                     <td style="color: ${houses[result.house]?.color || '#000'}">${result.house}</td>
                     <td>
-                        ${result.position !== 'N/A' ?
+                        ${result.position !== 'N/A' && !isNaN(parseInt(result.position)) ?
                             `<span class="position-${result.position}">${result.position}</span>` :
                             result.position
                         }
@@ -619,28 +666,51 @@
 
         // Filter results
         function filterResults() {
+            const eventFilter = document.getElementById('eventFilter').value;
             const categoryFilter = document.getElementById('categoryFilter').value;
             const typeFilter = document.getElementById('typeFilter').value;
-            const rows = document.querySelectorAll('#resultsBody tr');
 
-            rows.forEach(row => {
-                const cells = row.querySelectorAll('td');
-                if (cells.length < 2) return;
+            let filteredResults = allResults.filter(result => {
+                let showResult = true;
 
-                const category = cells[0].textContent.toLowerCase();
-                const type = cells[1].textContent.toLowerCase();
-
-                let showRow = true;
-
-                if (categoryFilter) {
-                    const catName = categories[categoryFilter].name.toLowerCase();
-                    if (!category.includes(catName.split(' ')[1])) showRow = false;
+                // Event filter
+                if (eventFilter && result.event !== eventFilter) {
+                    showResult = false;
                 }
 
-                if (typeFilter && !type.includes(typeFilter)) showRow = false;
+                // Category filter
+                if (categoryFilter) {
+                    const catName = categories[categoryFilter].name;
+                    if (result.category !== catName) {
+                        showResult = false;
+                    }
+                }
 
-                row.style.display = showRow ? '' : 'none';
+                // Type filter
+                if (typeFilter && !result.type.toLowerCase().includes(typeFilter)) {
+                    showResult = false;
+                }
+
+                return showResult;
             });
+
+            // Update the table with filtered results
+            const resultsBody = document.getElementById('resultsBody');
+            resultsBody.innerHTML = filteredResults.map(result => `
+                <tr>
+                    <td>${result.event}</td>
+                    <td>${result.type}</td>
+                    <td>${result.name}</td>
+                    <td>${result.class}</td>
+                    <td style="color: ${houses[result.house]?.color || '#000'}">${result.house}</td>
+                    <td>
+                        ${result.position !== 'N/A' && !isNaN(parseInt(result.position)) ?
+                            `<span class="position-${result.position}">${result.position}</span>` :
+                            result.position
+                        }
+                    </td>
+                </tr>
+            `).join('');
         }
 
         // Update category breakdown
