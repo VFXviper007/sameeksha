@@ -180,6 +180,7 @@
             background: white;
             transition: border-color 0.2s ease, box-shadow 0.2s ease;
             color: #334155;
+            min-width: 180px;
         }
 
         select:focus {
@@ -337,6 +338,10 @@
             .header h1 {
                 font-size: 2rem;
             }
+
+            select {
+                min-width: 100%;
+            }
         }
     </style>
 </head>
@@ -387,6 +392,12 @@
                             <option value="group">Group</option>
                         </select>
                     </div>
+                    <div class="filter-group">
+                        <label for="eventFilter">Event:</label>
+                        <select id="eventFilter" onchange="filterResults()">
+                            <option value="">All Events</option>
+                        </select>
+                    </div>
                 </div>
                 <div class="results-table">
                     <table id="resultsTable">
@@ -427,6 +438,10 @@
         </div>
     </div>
 
+    <footer style="text-align: center; padding: 20px; color: #94a3b8; font-size: 0.85rem; font-style: italic; margin-top: 30px;">
+        Made by Pranav
+    </footer>
+
     <script>
         // Global data storage
         let allData = {
@@ -437,6 +452,9 @@
                 cat1: [], cat2: [], cat3: [], cat4: [], cat5: []
             }
         };
+
+        // Store all events for the dropdown
+        let allEvents = new Set();
 
         // House configuration
         const houses = {
@@ -520,10 +538,38 @@
             }
         }
 
+        // Update event dropdown
+        function updateEventDropdown() {
+            const eventFilter = document.getElementById('eventFilter');
+            const currentValue = eventFilter.value;
+            
+            // Clear existing options except "All Events"
+            eventFilter.innerHTML = '<option value="">All Events</option>';
+            
+            // Sort events alphabetically and add to dropdown
+            const sortedEvents = Array.from(allEvents).sort();
+            sortedEvents.forEach(event => {
+                if (event && event.trim() !== '') {
+                    const option = document.createElement('option');
+                    option.value = event;
+                    option.textContent = event;
+                    eventFilter.appendChild(option);
+                }
+            });
+            
+            // Restore previous selection if it still exists
+            if (currentValue && allEvents.has(currentValue)) {
+                eventFilter.value = currentValue;
+            }
+        }
+
         // Load all data
         async function loadAllData() {
             const loadingElements = document.querySelectorAll('.loading');
             loadingElements.forEach(el => el.textContent = 'Loading...');
+
+            // Clear events set
+            allEvents.clear();
 
             try {
                 // Load individual results
@@ -531,8 +577,21 @@
                     const catKey = `cat${i}`;
                     allData.individual[catKey] = await loadCSV(`${catKey}_individual.csv`);
                     allData.group[catKey] = await loadCSV(`${catKey}_group.csv`);
+                    
+                    // Collect all event names
+                    allData.individual[catKey].forEach(result => {
+                        if (result.event_name && result.event_name.trim() !== '') {
+                            allEvents.add(result.event_name.trim());
+                        }
+                    });
+                    allData.group[catKey].forEach(result => {
+                        if (result.event_name && result.event_name.trim() !== '') {
+                            allEvents.add(result.event_name.trim());
+                        }
+                    });
                 }
 
+                updateEventDropdown();
                 updateLeaderboard();
                 updateResults();
                 updateCategoryBreakdown();
@@ -632,23 +691,30 @@
         function filterResults() {
             const categoryFilter = document.getElementById('categoryFilter').value;
             const typeFilter = document.getElementById('typeFilter').value;
+            const eventFilter = document.getElementById('eventFilter').value;
             const rows = document.querySelectorAll('#resultsBody tr');
 
             rows.forEach(row => {
                 const cells = row.querySelectorAll('td');
-                if (cells.length < 2) return;
+                if (cells.length < 6) return;
 
-                const category = cells[0].textContent.toLowerCase();
+                const event = cells[0].textContent.trim();
                 const type = cells[1].textContent.toLowerCase();
+                const category = cells[0].textContent.toLowerCase();
 
                 let showRow = true;
 
+                // Filter by category
                 if (categoryFilter) {
                     const catName = categories[categoryFilter].name.toLowerCase();
                     if (!category.includes(catName.split(' ')[1])) showRow = false;
                 }
 
+                // Filter by type
                 if (typeFilter && !type.includes(typeFilter)) showRow = false;
+
+                // Filter by event
+                if (eventFilter && event !== eventFilter) showRow = false;
 
                 row.style.display = showRow ? '' : 'none';
             });
