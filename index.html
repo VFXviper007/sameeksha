@@ -6,6 +6,7 @@
     <title>Cultural Fest Dashboard</title>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/3.9.1/chart.min.js"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/PapaParse/5.4.1/papaparse.min.js"></script>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
     <style>
         * {
             margin: 0;
@@ -13,393 +14,697 @@
             box-sizing: border-box;
         }
 
+        :root {
+            --primary: #4f46e5;
+            --primary-dark: #3730a3;
+            --secondary: #06b6d4;
+            --success: #10b981;
+            --warning: #f59e0b;
+            --danger: #ef4444;
+            --dark: #1f2937;
+            --light: #f8fafc;
+            --white: #ffffff;
+            --gray-100: #f3f4f6;
+            --gray-200: #e5e7eb;
+            --gray-300: #d1d5db;
+            --gray-400: #9ca3af;
+            --gray-500: #6b7280;
+            --gray-600: #4b5563;
+            --gray-700: #374151;
+            --gray-800: #1f2937;
+            --gray-900: #111827;
+            --shadow-sm: 0 1px 2px 0 rgb(0 0 0 / 0.05);
+            --shadow: 0 1px 3px 0 rgb(0 0 0 / 0.1), 0 1px 2px -1px rgb(0 0 0 / 0.1);
+            --shadow-md: 0 4px 6px -1px rgb(0 0 0 / 0.1), 0 2px 4px -2px rgb(0 0 0 / 0.1);
+            --shadow-lg: 0 10px 15px -3px rgb(0 0 0 / 0.1), 0 4px 6px -4px rgb(0 0 0 / 0.1);
+            --shadow-xl: 0 20px 25px -5px rgb(0 0 0 / 0.1), 0 8px 10px -6px rgb(0 0 0 / 0.1);
+        }
+
         body {
-            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, Cantarell, sans-serif;
-            background: #f8fafc;
+            font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
             min-height: 100vh;
+            line-height: 1.6;
+            color: var(--gray-800);
+            overflow-x: hidden;
+        }
+
+        .background-pattern {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            opacity: 0.03;
+            background-image: radial-gradient(circle at 25px 25px, rgba(255,255,255,.15) 2px, transparent 0);
+            background-size: 50px 50px;
+            pointer-events: none;
+            z-index: 0;
         }
 
         .container {
-            max-width: 1200px;
+            max-width: 1400px;
             margin: 0 auto;
             padding: 20px;
+            position: relative;
+            z-index: 1;
         }
 
         .header {
             text-align: center;
-            margin-bottom: 30px;
-            background: white;
-            padding: 40px;
-            border-radius: 12px;
-            box-shadow: 0 2px 10px rgba(0, 0, 0, 0.05);
-            border: 1px solid #e2e8f0;
+            margin-bottom: 40px;
+            background: rgba(255, 255, 255, 0.95);
+            backdrop-filter: blur(20px);
+            padding: 50px 40px;
+            border-radius: 24px;
+            box-shadow: var(--shadow-xl);
+            border: 1px solid rgba(255, 255, 255, 0.2);
+            position: relative;
+            overflow: hidden;
+        }
+
+        .header::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: -50%;
+            width: 200%;
+            height: 100%;
+            background: linear-gradient(45deg, transparent, rgba(99, 102, 241, 0.1), transparent);
+            animation: shimmer 3s infinite;
+        }
+
+        @keyframes shimmer {
+            0% { transform: translateX(-100%); }
+            100% { transform: translateX(100%); }
         }
 
         .header h1 {
-            color: #1e40af;
-            font-size: 2.5rem;
-            margin-bottom: 10px;
-            font-weight: 700;
+            background: linear-gradient(135deg, var(--primary), var(--secondary));
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            background-clip: text;
+            font-size: 3.5rem;
+            font-weight: 800;
+            margin-bottom: 15px;
+            letter-spacing: -0.02em;
+            position: relative;
+            z-index: 1;
         }
 
         .header p {
-            color: #64748b;
-            font-size: 1.1rem;
+            color: var(--gray-600);
+            font-size: 1.2rem;
+            font-weight: 500;
+            position: relative;
+            z-index: 1;
         }
 
         .status-indicator {
-            display: inline-block;
-            margin-left: 10px;
-            padding: 4px 8px;
-            border-radius: 12px;
-            font-size: 0.8rem;
+            display: inline-flex;
+            align-items: center;
+            gap: 8px;
+            margin-left: 15px;
+            padding: 8px 16px;
+            border-radius: 50px;
+            font-size: 0.85rem;
             font-weight: 600;
+            transition: all 0.3s ease;
         }
 
         .status-loading {
-            background: #fef3c7;
-            color: #92400e;
+            background: rgba(245, 158, 11, 0.1);
+            color: var(--warning);
+            border: 1px solid rgba(245, 158, 11, 0.2);
         }
 
         .status-updated {
-            background: #d1fae5;
-            color: #065f46;
+            background: rgba(16, 185, 129, 0.1);
+            color: var(--success);
+            border: 1px solid rgba(16, 185, 129, 0.2);
+        }
+
+        .refresh-btn {
+            background: linear-gradient(135deg, var(--primary), var(--primary-dark));
+            color: white;
+            border: none;
+            padding: 12px 24px;
+            border-radius: 12px;
+            font-size: 1rem;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            margin-left: 15px;
+            box-shadow: var(--shadow-md);
+            display: inline-flex;
+            align-items: center;
+            gap: 8px;
+        }
+
+        .refresh-btn:hover {
+            transform: translateY(-2px);
+            box-shadow: var(--shadow-lg);
+        }
+
+        .refresh-btn:active {
+            transform: translateY(0);
         }
 
         .nav-tabs {
             display: flex;
             justify-content: center;
-            margin-bottom: 30px;
-            background: white;
-            border-radius: 8px;
-            padding: 6px;
-            box-shadow: 0 2px 10px rgba(0, 0, 0, 0.05);
-            border: 1px solid #e2e8f0;
+            margin-bottom: 40px;
+            background: rgba(255, 255, 255, 0.95);
+            backdrop-filter: blur(20px);
+            border-radius: 16px;
+            padding: 8px;
+            box-shadow: var(--shadow-lg);
+            border: 1px solid rgba(255, 255, 255, 0.2);
+            overflow-x: auto;
         }
 
         .nav-tab {
-            padding: 12px 24px;
-            margin: 0 2px;
+            padding: 16px 28px;
+            margin: 0 4px;
             background: transparent;
             border: none;
-            border-radius: 6px;
+            border-radius: 12px;
             cursor: pointer;
-            font-weight: 500;
-            font-size: 0.95rem;
-            transition: all 0.2s ease;
-            color: #64748b;
+            font-weight: 600;
+            font-size: 1rem;
+            transition: all 0.3s ease;
+            color: var(--gray-600);
+            white-space: nowrap;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            position: relative;
+            overflow: hidden;
+        }
+
+        .nav-tab::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: -100%;
+            width: 100%;
+            height: 100%;
+            background: linear-gradient(90deg, transparent, rgba(255,255,255,0.4), transparent);
+            transition: left 0.5s;
+        }
+
+        .nav-tab:hover::before {
+            left: 100%;
         }
 
         .nav-tab:hover {
-            background: #f1f5f9;
-            color: #1e40af;
+            background: rgba(79, 70, 229, 0.1);
+            color: var(--primary);
+            transform: translateY(-1px);
         }
 
         .nav-tab.active {
-            background: #1e40af;
+            background: linear-gradient(135deg, var(--primary), var(--primary-dark));
             color: white;
-            font-weight: 600;
+            box-shadow: var(--shadow-md);
         }
 
         .tab-content {
             display: none;
+            animation: fadeIn 0.5s ease-in-out;
         }
 
         .tab-content.active {
             display: block;
         }
 
+        @keyframes fadeIn {
+            from { opacity: 0; transform: translateY(20px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+
+        .cards-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+            gap: 25px;
+            margin-bottom: 30px;
+        }
+
         .card {
-            background: white;
-            border-radius: 12px;
-            padding: 30px;
-            margin-bottom: 25px;
-            box-shadow: 0 2px 10px rgba(0, 0, 0, 0.05);
-            border: 1px solid #e2e8f0;
+            background: rgba(255, 255, 255, 0.95);
+            backdrop-filter: blur(20px);
+            border-radius: 20px;
+            padding: 35px;
+            box-shadow: var(--shadow-xl);
+            border: 1px solid rgba(255, 255, 255, 0.2);
+            transition: all 0.3s ease;
+            position: relative;
+            overflow: hidden;
+        }
+
+        .card::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: 0;
+            right: 0;
+            height: 4px;
+            background: linear-gradient(90deg, var(--primary), var(--secondary), var(--success));
+            border-radius: 20px 20px 0 0;
+        }
+
+        .card:hover {
+            transform: translateY(-5px);
+            box-shadow: var(--shadow-xl), 0 25px 50px -12px rgba(0, 0, 0, 0.25);
         }
 
         .card h2 {
-            color: #1e40af;
-            margin-bottom: 25px;
-            font-size: 1.8rem;
-            font-weight: 600;
+            background: linear-gradient(135deg, var(--primary), var(--secondary));
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            background-clip: text;
+            margin-bottom: 30px;
+            font-size: 2rem;
+            font-weight: 700;
+            display: flex;
+            align-items: center;
+            gap: 12px;
         }
 
         .leaderboard {
             display: grid;
-            gap: 15px;
+            gap: 20px;
         }
 
         .house-item {
             display: flex;
             align-items: center;
             justify-content: space-between;
-            padding: 20px 25px;
-            border-radius: 8px;
+            padding: 25px 30px;
+            border-radius: 16px;
             font-weight: 600;
-            font-size: 1.1rem;
-            transition: transform 0.2s ease, box-shadow 0.2s ease;
-            background: white;
-            border: 2px solid #e2e8f0;
-            color: #334155;
+            font-size: 1.2rem;
+            transition: all 0.3s ease;
+            background: rgba(255, 255, 255, 0.8);
+            backdrop-filter: blur(10px);
+            border: 2px solid transparent;
+            position: relative;
+            overflow: hidden;
+        }
+
+        .house-item::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: 0;
+            bottom: 0;
+            width: 6px;
+            border-radius: 0 6px 6px 0;
         }
 
         .house-item:hover {
-            transform: translateY(-2px);
-            box-shadow: 0 4px 20px rgba(0, 0, 0, 0.08);
-            border-color: #cbd5e1;
+            transform: translateX(5px) scale(1.02);
+            box-shadow: var(--shadow-lg);
+            border-color: rgba(79, 70, 229, 0.3);
         }
 
-        .house-ganga {
-            border-left: 4px solid #FFA500;
-        }
-        .house-yamuna {
-            border-left: 4px solid #3b82f6;
-        }
-        .house-kaveri {
-            border-left: 4px solid #10b981;
-        }
-        .house-krishna {
-            border-left: 4px solid #ef4444;
-        }
+        .house-ganga::before { background: linear-gradient(180deg, #FFA500, #ff8c00); }
+        .house-yamuna::before { background: linear-gradient(180deg, #3b82f6, #1d4ed8); }
+        .house-kaveri::before { background: linear-gradient(180deg, #10b981, #059669); }
+        .house-krishna::before { background: linear-gradient(180deg, #ef4444, #dc2626); }
 
         .points {
-            font-size: 1.3rem;
-            font-weight: 700;
-            padding: 8px 16px;
-            background: #f1f5f9;
-            border-radius: 20px;
-            color: #1e40af;
+            font-size: 1.4rem;
+            font-weight: 800;
+            padding: 12px 20px;
+            background: linear-gradient(135deg, var(--primary), var(--primary-dark));
+            color: white;
+            border-radius: 50px;
+            box-shadow: var(--shadow-md);
+            display: flex;
+            align-items: center;
+            gap: 8px;
         }
 
         .filters {
-            display: flex;
-            gap: 15px;
-            margin-bottom: 25px;
-            flex-wrap: wrap;
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+            gap: 20px;
+            margin-bottom: 30px;
+            padding: 25px;
+            background: rgba(255, 255, 255, 0.8);
+            backdrop-filter: blur(10px);
+            border-radius: 16px;
+            border: 1px solid rgba(255, 255, 255, 0.3);
         }
 
         .filter-group {
             display: flex;
             flex-direction: column;
-            gap: 8px;
+            gap: 10px;
         }
 
         .filter-group label {
             font-weight: 600;
-            color: #1e40af;
-            font-size: 0.9rem;
+            color: var(--gray-700);
+            font-size: 0.95rem;
+            display: flex;
+            align-items: center;
+            gap: 8px;
         }
 
         select {
-            padding: 12px 16px;
-            border: 2px solid #e2e8f0;
-            border-radius: 6px;
+            padding: 14px 18px;
+            border: 2px solid var(--gray-200);
+            border-radius: 12px;
             font-size: 1rem;
             background: white;
-            transition: border-color 0.2s ease, box-shadow 0.2s ease;
-            color: #334155;
-            min-width: 180px;
+            transition: all 0.3s ease;
+            color: var(--gray-700);
+            font-weight: 500;
         }
 
         select:focus {
             outline: none;
-            border-color: #3b82f6;
-            box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.1);
+            border-color: var(--primary);
+            box-shadow: 0 0 0 3px rgba(79, 70, 229, 0.1);
+            transform: translateY(-1px);
         }
 
         .results-table {
             overflow-x: auto;
+            border-radius: 16px;
+            box-shadow: var(--shadow-md);
         }
 
         table {
             width: 100%;
             border-collapse: collapse;
-            margin-top: 15px;
+            background: white;
+            border-radius: 16px;
+            overflow: hidden;
         }
 
         th, td {
-            padding: 15px 12px;
+            padding: 18px 16px;
             text-align: left;
-            border-bottom: 1px solid #e2e8f0;
+            border-bottom: 1px solid var(--gray-100);
         }
 
         th {
-            background: #f8fafc;
-            font-weight: 600;
-            color: #1e40af;
+            background: linear-gradient(135deg, var(--gray-50), var(--gray-100));
+            font-weight: 700;
+            color: var(--gray-800);
             font-size: 0.95rem;
+            text-transform: uppercase;
+            letter-spacing: 0.05em;
         }
 
-        tr:hover {
-            background: #f8fafc;
+        tbody tr {
+            transition: all 0.2s ease;
         }
 
-        .position-1 {
-            background: #fbbf24;
-            color: white;
-            font-weight: bold;
-            border-radius: 4px;
-            padding: 4px 8px;
+        tbody tr:hover {
+            background: rgba(79, 70, 229, 0.05);
+            transform: scale(1.01);
         }
-        .position-2 {
-            background: #9ca3af;
-            color: white;
+
+        .position-1, .position-2, .position-3 {
             font-weight: bold;
-            border-radius: 4px;
-            padding: 4px 8px;
-        }
-        .position-3 {
-            background: #d97706;
+            border-radius: 8px;
+            padding: 6px 12px;
             color: white;
-            font-weight: bold;
-            border-radius: 4px;
-            padding: 4px 8px;
+            font-size: 0.9rem;
+            display: inline-flex;
+            align-items: center;
+            gap: 6px;
         }
+
+        .position-1 { background: linear-gradient(135deg, #fbbf24, #f59e0b); }
+        .position-2 { background: linear-gradient(135deg, #9ca3af, #6b7280); }
+        .position-3 { background: linear-gradient(135deg, #d97706, #b45309); }
 
         .chart-container {
             position: relative;
-            height: 400px;
-            margin-top: 20px;
+            height: 450px;
+            margin-top: 25px;
+            background: rgba(255, 255, 255, 0.8);
+            backdrop-filter: blur(10px);
+            border-radius: 16px;
+            padding: 20px;
+            border: 1px solid rgba(255, 255, 255, 0.3);
+        }
+
+        .charts-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(450px, 1fr));
+            gap: 30px;
+        }
+
+        .chart-card {
+            background: rgba(255, 255, 255, 0.95);
+            backdrop-filter: blur(20px);
+            border-radius: 20px;
+            padding: 30px;
+            box-shadow: var(--shadow-xl);
+            border: 1px solid rgba(255, 255, 255, 0.2);
+            transition: all 0.3s ease;
+        }
+
+        .chart-card:hover {
+            transform: translateY(-3px);
+            box-shadow: var(--shadow-xl), 0 20px 40px -12px rgba(0, 0, 0, 0.15);
+        }
+
+        .chart-card h3 {
+            font-size: 1.4rem;
+            font-weight: 700;
+            color: var(--gray-800);
+            margin-bottom: 20px;
+            display: flex;
+            align-items: center;
+            gap: 10px;
         }
 
         .category-grid {
             display: grid;
-            grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
-            gap: 20px;
+            grid-template-columns: repeat(auto-fit, minmax(320px, 1fr));
+            gap: 25px;
         }
 
         .category-card {
-            background: white;
-            border-radius: 8px;
-            padding: 25px;
+            background: rgba(255, 255, 255, 0.95);
+            backdrop-filter: blur(20px);
+            border-radius: 20px;
+            padding: 30px;
             text-align: center;
-            box-shadow: 0 2px 10px rgba(0, 0, 0, 0.05);
-            border: 1px solid #e2e8f0;
-            transition: transform 0.2s ease, box-shadow 0.2s ease;
+            box-shadow: var(--shadow-lg);
+            border: 1px solid rgba(255, 255, 255, 0.2);
+            transition: all 0.3s ease;
+            position: relative;
+            overflow: hidden;
+        }
+
+        .category-card::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: 0;
+            right: 0;
+            height: 4px;
+            background: linear-gradient(90deg, var(--primary), var(--secondary));
         }
 
         .category-card:hover {
-            transform: translateY(-2px);
-            box-shadow: 0 4px 20px rgba(0, 0, 0, 0.08);
+            transform: translateY(-5px) rotate(1deg);
+            box-shadow: var(--shadow-xl);
         }
 
         .category-title {
-            font-size: 1.3rem;
-            font-weight: 700;
-            margin-bottom: 10px;
-            color: #1e40af;
+            font-size: 1.5rem;
+            font-weight: 800;
+            margin-bottom: 12px;
+            background: linear-gradient(135deg, var(--primary), var(--secondary));
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            background-clip: text;
         }
 
         .category-classes {
-            font-size: 0.9rem;
-            color: #64748b;
-            margin-bottom: 15px;
+            font-size: 1rem;
+            color: var(--gray-500);
+            margin-bottom: 20px;
+            font-weight: 500;
         }
 
         .leading-house {
-            padding: 12px 20px;
-            border-radius: 6px;
-            font-weight: 600;
-            font-size: 1rem;
-            margin-top: 10px;
-            background: #f1f5f9;
-            color: #1e40af;
-            border: 2px solid #e2e8f0;
+            padding: 16px 24px;
+            border-radius: 12px;
+            font-weight: 700;
+            font-size: 1.1rem;
+            margin-top: 15px;
+            background: rgba(79, 70, 229, 0.1);
+            color: var(--primary);
+            border: 2px solid rgba(79, 70, 229, 0.2);
+            transition: all 0.3s ease;
+        }
+
+        .leading-house:hover {
+            background: var(--primary);
+            color: white;
+            transform: scale(1.05);
         }
 
         .loading {
             text-align: center;
-            padding: 40px;
-            color: #64748b;
-            font-size: 1.1rem;
+            padding: 50px;
+            color: var(--gray-500);
+            font-size: 1.2rem;
+            font-weight: 500;
         }
 
-        .refresh-btn {
-            background: #1e40af;
-            color: white;
-            border: none;
-            padding: 12px 24px;
-            border-radius: 6px;
-            font-size: 1rem;
+        .stats-row {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+            gap: 20px;
+            margin-bottom: 30px;
+        }
+
+        .stat-card {
+            background: rgba(255, 255, 255, 0.95);
+            backdrop-filter: blur(20px);
+            border-radius: 16px;
+            padding: 25px;
+            text-align: center;
+            box-shadow: var(--shadow-md);
+            border: 1px solid rgba(255, 255, 255, 0.2);
+            transition: all 0.3s ease;
+        }
+
+        .stat-card:hover {
+            transform: translateY(-3px);
+            box-shadow: var(--shadow-lg);
+        }
+
+        .stat-number {
+            font-size: 2.5rem;
+            font-weight: 800;
+            color: var(--primary);
+            display: block;
+        }
+
+        .stat-label {
+            font-size: 0.9rem;
+            color: var(--gray-600);
             font-weight: 600;
-            cursor: pointer;
-            transition: all 0.2s ease;
-            margin-left: 10px;
+            text-transform: uppercase;
+            letter-spacing: 0.05em;
         }
 
-        .refresh-btn:hover {
-            background: #1d4ed8;
-            transform: translateY(-1px);
+        footer {
+            text-align: center;
+            padding: 30px 20px;
+            color: rgba(255, 255, 255, 0.8);
+            font-size: 0.9rem;
+            font-weight: 500;
+            margin-top: 50px;
+            background: rgba(255, 255, 255, 0.1);
+            backdrop-filter: blur(10px);
+            border-radius: 16px;
+            border: 1px solid rgba(255, 255, 255, 0.2);
         }
 
         @media (max-width: 768px) {
-            .nav-tabs {
-                flex-wrap: wrap;
-                gap: 8px;
-            }
+            .header h1 { font-size: 2.5rem; }
+            .nav-tabs { flex-wrap: wrap; gap: 8px; }
+            .nav-tab { flex: 1; min-width: 120px; }
+            .filters { grid-template-columns: 1fr; }
+            .charts-grid { grid-template-columns: 1fr; }
+            .chart-container { height: 350px; }
+            .house-item { flex-direction: column; gap: 10px; text-align: center; }
+        }
 
-            .nav-tab {
-                flex: 1;
-                min-width: 120px;
-                text-align: center;
-            }
+        .pulse {
+            animation: pulse 2s infinite;
+        }
 
-            .filters {
-                flex-direction: column;
-            }
+        @keyframes pulse {
+            0%, 100% { opacity: 1; }
+            50% { opacity: 0.7; }
+        }
 
-            .house-item {
-                flex-direction: column;
-                gap: 10px;
-                text-align: center;
-            }
-
-            .header h1 {
-                font-size: 2rem;
-            }
-
-            select {
-                min-width: 100%;
-            }
+        .gradient-text {
+            background: linear-gradient(135deg, var(--primary), var(--secondary));
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            background-clip: text;
         }
     </style>
 </head>
 <body>
+    <div class="background-pattern"></div>
+    
     <div class="container">
         <div class="header">
-            <h1>Sameeksha</h1>
-            <p>Live Results & Leaderboards 
-                <span id="statusIndicator" class="status-indicator status-loading">Loading...</span>
-                <button class="refresh-btn" onclick="manualRefresh()">🔄 Refresh</button>
+            <h1>🎭 Sameeksha</h1>
+            <p>Live Results & Analytics Dashboard
+                <span id="statusIndicator" class="status-indicator status-loading pulse">
+                    <span>⏳</span> Loading...
+                </span>
+                <button class="refresh-btn" onclick="manualRefresh()">
+                    <span>🔄</span> Refresh
+                </button>
             </p>
-            <div style="font-size: 0.85rem; color: #64748b; margin-top: 10px;">
-                Last updated: <span id="lastUpdated">Never</span>
+            <div style="font-size: 0.9rem; color: var(--gray-500); margin-top: 15px; font-weight: 500;">
+                Last updated: <span id="lastUpdated" class="gradient-text">Never</span>
             </div>
         </div>
 
         <nav class="nav-tabs">
-            <button class="nav-tab active" onclick="showTab('home')">🏠 Home</button>
-            <button class="nav-tab" onclick="showTab('results')">📊 Results</button>
-            <button class="nav-tab" onclick="showTab('categories')">🎯 Categories</button>
-            <button class="nav-tab" onclick="showTab('charts')">📈 Charts</button>
+            <button class="nav-tab active" onclick="showTab('home')">
+                <span>🏠</span> Home
+            </button>
+            <button class="nav-tab" onclick="showTab('results')">
+                <span>📊</span> Results
+            </button>
+            <button class="nav-tab" onclick="showTab('categories')">
+                <span>🎯</span> Categories
+            </button>
+            <button class="nav-tab" onclick="showTab('charts')">
+                <span>📈</span> Analytics
+            </button>
         </nav>
 
         <div id="home" class="tab-content active">
+            <div class="stats-row">
+                <div class="stat-card">
+                    <span id="totalEvents" class="stat-number">-</span>
+                    <span class="stat-label">Total Events</span>
+                </div>
+                <div class="stat-card">
+                    <span id="totalParticipants" class="stat-number">-</span>
+                    <span class="stat-label">Participants</span>
+                </div>
+                <div class="stat-card">
+                    <span id="completedEvents" class="stat-number">-</span>
+                    <span class="stat-label">Completed</span>
+                </div>
+            </div>
+
             <div class="card">
-                <h2>🏆 House Leaderboard</h2>
+                <h2><span>🏆</span> House Leaderboard</h2>
                 <div id="leaderboard" class="leaderboard">
-                    <div class="loading">Loading results...</div>
+                    <div class="loading pulse">Loading results...</div>
                 </div>
             </div>
         </div>
 
         <div id="results" class="tab-content">
             <div class="card">
-                <h2>📋 Results Viewer</h2>
+                <h2><span>📋</span> Results Viewer</h2>
                 <div class="filters">
                     <div class="filter-group">
-                        <label for="categoryFilter">Category:</label>
+                        <label for="categoryFilter"><span>🎯</span> Category:</label>
                         <select id="categoryFilter" onchange="filterResults()">
                             <option value="">All Categories</option>
                             <option value="cat1">Category 1 (Classes 1-2)</option>
@@ -410,7 +715,7 @@
                         </select>
                     </div>
                     <div class="filter-group">
-                        <label for="typeFilter">Type:</label>
+                        <label for="typeFilter"><span>👥</span> Type:</label>
                         <select id="typeFilter" onchange="filterResults()">
                             <option value="">All Types</option>
                             <option value="individual">Individual</option>
@@ -418,7 +723,7 @@
                         </select>
                     </div>
                     <div class="filter-group">
-                        <label for="eventFilter">Event:</label>
+                        <label for="eventFilter"><span>🎪</span> Event:</label>
                         <select id="eventFilter" onchange="filterResults()">
                             <option value="">All Events</option>
                         </select>
@@ -437,7 +742,7 @@
                             </tr>
                         </thead>
                         <tbody id="resultsBody">
-                            <tr><td colspan="6" class="loading">Loading results...</td></tr>
+                            <tr><td colspan="6" class="loading pulse">Loading results...</td></tr>
                         </tbody>
                     </table>
                 </div>
@@ -446,42 +751,75 @@
 
         <div id="categories" class="tab-content">
             <div class="card">
-                <h2>🎯 Category Breakdown</h2>
+                <h2><span>🎯</span> Category Breakdown</h2>
                 <div id="categoryBreakdown" class="category-grid">
-                    <div class="loading">Loading category data...</div>
+                    <div class="loading pulse">Loading category data...</div>
                 </div>
             </div>
         </div>
 
         <div id="charts" class="tab-content">
-            <div class="card">
-                <h2>📈 House Points Visualization</h2>
-                <div class="chart-container">
-                    <canvas id="pointsChart"></canvas>
+            <div class="charts-grid">
+                <div class="chart-card">
+                    <h3><span>📊</span> House Points Distribution</h3>
+                    <div class="chart-container">
+                        <canvas id="pointsChart"></canvas>
+                    </div>
+                </div>
+
+                <div class="chart-card">
+                    <h3><span>🥇</span> Position Distribution</h3>
+                    <div class="chart-container">
+                        <canvas id="positionChart"></canvas>
+                    </div>
+                </div>
+
+                <div class="chart-card">
+                    <h3><span>📈</span> Category Performance</h3>
+                    <div class="chart-container">
+                        <canvas id="categoryChart"></canvas>
+                    </div>
+                </div>
+
+                <div class="chart-card">
+                    <h3><span>🎭</span> Event Participation</h3>
+                    <div class="chart-container">
+                        <canvas id="participationChart"></canvas>
+                    </div>
+                </div>
+
+                <div class="chart-card">
+                    <h3><span>🏃‍♂️</span> Individual vs Group</h3>
+                    <div class="chart-container">
+                        <canvas id="typeChart"></canvas>
+                    </div>
+                </div>
+
+                <div class="chart-card">
+                    <h3><span>📚</span> Class Participation</h3>
+                    <div class="chart-container">
+                        <canvas id="classChart"></canvas>
+                    </div>
                 </div>
             </div>
         </div>
     </div>
 
-    <footer style="text-align: center; padding: 20px; color: #94a3b8; font-size: 0.85rem; font-style: italic; margin-top: 30px;">
-        Made by Pranav
+    <footer>
+        <div style="font-weight: 600; margin-bottom: 5px;">✨ Made with passion by Pranav ✨</div>
+        <div style="font-size: 0.8rem; opacity: 0.8;">Cultural Fest Dashboard • Real-time Analytics</div>
     </footer>
 
     <script>
         // Global data storage
         let allData = {
-            individual: {
-                cat1: [], cat2: [], cat3: [], cat4: [], cat5: []
-            },
-            group: {
-                cat1: [], cat2: [], cat3: [], cat4: [], cat5: []
-            }
+            individual: { cat1: [], cat2: [], cat3: [], cat4: [], cat5: [] },
+            group: { cat1: [], cat2: [], cat3: [], cat4: [], cat5: [] }
         };
 
-        // Store all events for the dropdown
         let allEvents = new Set();
+        let charts = {};
 
-        // House configuration
         const houses = {
             'Ganga': { color: '#FFA500', class: 'house-ganga' },
             'Yamuna': { color: '#3b82f6', class: 'house-yamuna' },
@@ -499,7 +837,6 @@
 
         // Tab navigation
         function showTab(tabName) {
-            // Hide all tabs
             document.querySelectorAll('.tab-content').forEach(tab => {
                 tab.classList.remove('active');
             });
@@ -507,20 +844,19 @@
                 btn.classList.remove('active');
             });
 
-            // Show selected tab
             document.getElementById(tabName).classList.add('active');
             event.target.classList.add('active');
 
-            // Refresh chart if charts tab is selected
             if (tabName === 'charts') {
-                setTimeout(updateChart, 100);
+                setTimeout(() => {
+                    updateAllCharts();
+                }, 100);
             }
         }
 
-        // Load CSV data with cache busting and better error handling
+        // Load CSV data
         async function loadCSV(filename) {
             try {
-                // Add cache busting parameter with more randomness
                 const cacheBuster = `${new Date().getTime()}_${Math.random().toString(36).substr(2, 9)}`;
                 const url = `${filename}?v=${cacheBuster}`;
                 
@@ -542,7 +878,6 @@
                 }
                 
                 const csvText = await response.text();
-                console.log(`Loaded ${filename}: ${csvText.length} characters`);
                 
                 if (!csvText.trim()) {
                     console.warn(`${filename} is empty`);
@@ -560,7 +895,6 @@
                     console.warn(`Parse errors in ${filename}:`, result.errors);
                 }
 
-                // Clean headers and map to expected format
                 if (result.data.length > 0) {
                     const cleanedData = result.data.map(row => {
                         const cleanedRow = {};
@@ -569,7 +903,6 @@
                             cleanedRow[cleanKey] = row[key] ? row[key].toString().trim() : '';
                         });
 
-                        // Map CSV columns to expected format
                         return {
                             event_name: cleanedRow.event_name || cleanedRow.Event || cleanedRow.event || '',
                             name: cleanedRow.student_name || cleanedRow.name || cleanedRow.Name || cleanedRow.Student || '',
@@ -600,9 +933,13 @@
             const lastUpdated = document.getElementById('lastUpdated');
             
             indicator.className = `status-indicator status-${status}`;
-            indicator.textContent = message;
             
-            if (status === 'updated') {
+            if (status === 'loading') {
+                indicator.innerHTML = '<span>⏳</span> ' + message;
+                indicator.classList.add('pulse');
+            } else if (status === 'updated') {
+                indicator.innerHTML = '<span>✅</span> ' + message;
+                indicator.classList.remove('pulse');
                 lastUpdated.textContent = new Date().toLocaleTimeString();
             }
         }
@@ -618,10 +955,8 @@
             const eventFilter = document.getElementById('eventFilter');
             const currentValue = eventFilter.value;
 
-            // Clear existing options except "All Events"
             eventFilter.innerHTML = '<option value="">All Events</option>';
 
-            // Sort events alphabetically and add to dropdown
             const sortedEvents = Array.from(allEvents).sort();
             sortedEvents.forEach(event => {
                 if (event && event.trim() !== '') {
@@ -632,10 +967,24 @@
                 }
             });
 
-            // Restore previous selection if it still exists
             if (currentValue && allEvents.has(currentValue)) {
                 eventFilter.value = currentValue;
             }
+        }
+
+        // Update statistics
+        function updateStatistics() {
+            let totalParticipants = 0;
+            let completedEvents = 0;
+
+            Object.keys(allData.individual).forEach(category => {
+                totalParticipants += allData.individual[category].length;
+                totalParticipants += allData.group[category].length;
+            });
+
+            document.getElementById('totalEvents').textContent = allEvents.size || 0;
+            document.getElementById('totalParticipants').textContent = totalParticipants;
+            document.getElementById('completedEvents').textContent = allEvents.size || 0;
         }
 
         // Load all data
@@ -646,13 +995,11 @@
             const loadingElements = document.querySelectorAll('.loading');
             loadingElements.forEach(el => el.textContent = 'Loading...');
 
-            // Clear events set
             allEvents.clear();
 
             try {
                 let totalRecords = 0;
                 
-                // Load individual and group results for all categories
                 for (let i = 1; i <= 5; i++) {
                     const catKey = `cat${i}`;
                     
@@ -664,7 +1011,6 @@
                     
                     totalRecords += individualData.length + groupData.length;
 
-                    // Collect all event names
                     individualData.forEach(result => {
                         if (result.event_name && result.event_name.trim() !== '') {
                             allEvents.add(result.event_name.trim());
@@ -680,10 +1026,11 @@
                 console.log(`Loaded ${totalRecords} total records, ${allEvents.size} unique events`);
 
                 updateEventDropdown();
+                updateStatistics();
                 updateLeaderboard();
                 updateResults();
                 updateCategoryBreakdown();
-                updateChart();
+                updateAllCharts();
                 
                 updateStatus('updated', `Updated (${totalRecords} records)`);
                 
@@ -698,7 +1045,6 @@
         function calculateHousePoints() {
             const housePoints = { Ganga: 0, Yamuna: 0, Kaveri: 0, Krishna: 0 };
 
-            // Only individual events count for points
             Object.keys(allData.individual).forEach(category => {
                 allData.individual[category].forEach(result => {
                     const house = result.house;
@@ -722,12 +1068,17 @@
                 .sort(([,a], [,b]) => b - a);
 
             const leaderboard = document.getElementById('leaderboard');
-            leaderboard.innerHTML = sortedHouses.map(([house, points], index) => `
-                <div class="house-item ${houses[house].class}">
-                    <span>${index + 1}. ${house}</span>
-                    <span class="points">${points} pts</span>
-                </div>
-            `).join('');
+            leaderboard.innerHTML = sortedHouses.map(([house, points], index) => {
+                const medal = index === 0 ? '🥇' : index === 1 ? '🥈' : index === 2 ? '🥉' : '🏆';
+                return `
+                    <div class="house-item ${houses[house].class}">
+                        <span>${medal} ${index + 1}. ${house}</span>
+                        <span class="points">
+                            <span>⭐</span> ${points} pts
+                        </span>
+                    </div>
+                `;
+            }).join('');
         }
 
         // Update results table
@@ -735,7 +1086,6 @@
             const resultsBody = document.getElementById('resultsBody');
             const allResults = [];
 
-            // Combine all data
             Object.keys(allData.individual).forEach(category => {
                 allData.individual[category].forEach(result => {
                     allResults.push({
@@ -765,13 +1115,31 @@
             resultsBody.innerHTML = allResults.map(result => `
                 <tr>
                     <td>${result.event}</td>
-                    <td>${result.type}</td>
+                    <td>
+                        <span style="padding: 4px 8px; border-radius: 6px; font-size: 0.85rem; font-weight: 600; 
+                               background: ${result.type === 'Individual' ? 'rgba(59, 130, 246, 0.1)' : 'rgba(16, 185, 129, 0.1)'};
+                               color: ${result.type === 'Individual' ? '#3b82f6' : '#10b981'};">
+                            ${result.type === 'Individual' ? '👤' : '👥'} ${result.type}
+                        </span>
+                    </td>
                     <td>${result.name}</td>
-                    <td>${result.class}</td>
-                    <td style="color: ${houses[result.house]?.color || '#000'}">${result.house}</td>
+                    <td>
+                        <span style="padding: 2px 8px; border-radius: 4px; background: rgba(107, 114, 128, 0.1); 
+                               color: #4b5563; font-weight: 600; font-size: 0.9rem;">
+                            ${result.class}
+                        </span>
+                    </td>
+                    <td>
+                        <span style="color: ${houses[result.house]?.color || '#000'}; font-weight: 700;">
+                            ${result.house}
+                        </span>
+                    </td>
                     <td>
                         ${result.position !== 'N/A' && !isNaN(parseInt(result.position)) ?
-                            `<span class="position-${result.position}">${result.position}</span>` :
+                            `<span class="position-${result.position}">
+                                ${result.position === '1' ? '🥇' : result.position === '2' ? '🥈' : result.position === '3' ? '🥉' : '🏆'} 
+                                ${result.position}
+                            </span>` :
                             result.position
                         }
                     </td>
@@ -796,16 +1164,12 @@
 
                 let showRow = true;
 
-                // Filter by category
                 if (categoryFilter) {
                     const catName = categories[categoryFilter].name.toLowerCase();
                     if (!category.includes(catName.split(' ')[1])) showRow = false;
                 }
 
-                // Filter by type
                 if (typeFilter && !type.includes(typeFilter)) showRow = false;
-
-                // Filter by event
                 if (eventFilter && event !== eventFilter) showRow = false;
 
                 row.style.display = showRow ? '' : 'none';
@@ -818,7 +1182,6 @@
             const categoryData = Object.keys(categories).map(catKey => {
                 const housePoints = { Ganga: 0, Yamuna: 0, Kaveri: 0, Krishna: 0 };
 
-                // Calculate points for this category
                 allData.individual[catKey].forEach(result => {
                     const house = result.house;
                     const position = parseInt(result.position);
@@ -844,38 +1207,116 @@
 
             breakdown.innerHTML = categoryData.map(cat => `
                 <div class="category-card">
-                    <div class="category-title">${cat.name}</div>
-                    <div class="category-classes">${cat.classes}</div>
+                    <div class="category-title">🎯 ${cat.name}</div>
+                    <div class="category-classes">📚 ${cat.classes}</div>
                     <div class="leading-house ${houses[cat.leadingHouse].class}">
                         🏆 ${cat.leadingHouse} Leading
                         <br>
-                        <small>${cat.leadingPoints} points</small>
+                        <small style="font-weight: 500;">⭐ ${cat.leadingPoints} points</small>
                     </div>
                 </div>
             `).join('');
         }
 
-        // Update chart
-        function updateChart() {
+        // Update all charts
+        function updateAllCharts() {
+            updatePointsChart();
+            updatePositionChart();
+            updateCategoryChart();
+            updateParticipationChart();
+            updateTypeChart();
+            updateClassChart();
+        }
+
+        // Points distribution chart
+        function updatePointsChart() {
             const ctx = document.getElementById('pointsChart');
             if (!ctx) return;
 
             const housePoints = calculateHousePoints();
 
-            // Destroy existing chart if it exists
-            if (window.pointsChart instanceof Chart) {
-                window.pointsChart.destroy();
+            if (charts.pointsChart) {
+                charts.pointsChart.destroy();
             }
 
-            window.pointsChart = new Chart(ctx, {
-                type: 'bar',
+            charts.pointsChart = new Chart(ctx, {
+                type: 'doughnut',
                 data: {
                     labels: Object.keys(housePoints),
                     datasets: [{
-                        label: 'Points',
                         data: Object.values(housePoints),
                         backgroundColor: Object.keys(housePoints).map(house => houses[house].color),
-                        borderColor: Object.keys(housePoints).map(house => houses[house].color),
+                        borderWidth: 3,
+                        borderColor: '#ffffff',
+                        hoverBorderWidth: 5
+                    }]
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    plugins: {
+                        legend: {
+                            position: 'bottom',
+                            labels: {
+                                padding: 20,
+                                font: { size: 14, weight: 'bold' },
+                                usePointStyle: true,
+                                pointStyle: 'circle'
+                            }
+                        },
+                        tooltip: {
+                            backgroundColor: 'rgba(0, 0, 0, 0.8)',
+                            titleColor: '#ffffff',
+                            bodyColor: '#ffffff',
+                            borderColor: '#ffffff',
+                            borderWidth: 1,
+                            cornerRadius: 8,
+                            callbacks: {
+                                label: function(context) {
+                                    const total = context.dataset.data.reduce((a, b) => a + b, 0);
+                                    const percentage = ((context.parsed / total) * 100).toFixed(1);
+                                    return `${context.label}: ${context.parsed} points (${percentage}%)`;
+                                }
+                            }
+                        }
+                    },
+                    animation: {
+                        animateRotate: true,
+                        duration: 1500
+                    }
+                }
+            });
+        }
+
+        // Position distribution chart
+        function updatePositionChart() {
+            const ctx = document.getElementById('positionChart');
+            if (!ctx) return;
+
+            const positionData = { 1: 0, 2: 0, 3: 0 };
+
+            Object.keys(allData.individual).forEach(category => {
+                allData.individual[category].forEach(result => {
+                    const position = parseInt(result.position);
+                    if (position >= 1 && position <= 3) {
+                        positionData[position]++;
+                    }
+                });
+            });
+
+            if (charts.positionChart) {
+                charts.positionChart.destroy();
+            }
+
+            charts.positionChart = new Chart(ctx, {
+                type: 'bar',
+                data: {
+                    labels: ['🥇 First Place', '🥈 Second Place', '🥉 Third Place'],
+                    datasets: [{
+                        label: 'Number of Winners',
+                        data: [positionData[1], positionData[2], positionData[3]],
+                        backgroundColor: ['#fbbf24', '#9ca3af', '#d97706'],
+                        borderColor: ['#f59e0b', '#6b7280', '#b45309'],
                         borderWidth: 2,
                         borderRadius: 8
                     }]
@@ -884,30 +1325,315 @@
                     responsive: true,
                     maintainAspectRatio: false,
                     plugins: {
-                        legend: {
-                            display: false
-                        },
-                        title: {
-                            display: true,
-                            text: 'House Points Distribution',
-                            font: {
-                                size: 18,
-                                weight: 'bold'
-                            }
+                        legend: { display: false },
+                        tooltip: {
+                            backgroundColor: 'rgba(0, 0, 0, 0.8)',
+                            titleColor: '#ffffff',
+                            bodyColor: '#ffffff',
+                            cornerRadius: 8
                         }
                     },
                     scales: {
                         y: {
                             beginAtZero: true,
-                            ticks: {
-                                stepSize: 1
+                            ticks: { stepSize: 1 },
+                            grid: { color: 'rgba(0, 0, 0, 0.1)' }
+                        },
+                        x: {
+                            grid: { display: false }
+                        }
+                    },
+                    animation: { duration: 1000, easing: 'easeInOutQuart' }
+                }
+            });
+        }
+
+        // Category performance chart
+        function updateCategoryChart() {
+            const ctx = document.getElementById('categoryChart');
+            if (!ctx) return;
+
+            const categoryData = {};
+            const houseNames = Object.keys(houses);
+
+            houseNames.forEach(house => {
+                categoryData[house] = [0, 0, 0, 0, 0]; // 5 categories
+            });
+
+            Object.keys(categories).forEach((catKey, index) => {
+                allData.individual[catKey].forEach(result => {
+                    const house = result.house;
+                    const position = parseInt(result.position);
+
+                    if (house && houses[house] && position) {
+                        let points = 0;
+                        if (position === 1) points = 5;
+                        else if (position === 2) points = 3;
+                        else if (position === 3) points = 1;
+
+                        if (categoryData[house]) {
+                            categoryData[house][index] += points;
+                        }
+                    }
+                });
+            });
+
+            if (charts.categoryChart) {
+                charts.categoryChart.destroy();
+            }
+
+            const datasets = houseNames.map(house => ({
+                label: house,
+                data: categoryData[house],
+                backgroundColor: houses[house].color + '80',
+                borderColor: houses[house].color,
+                borderWidth: 2,
+                tension: 0.4,
+                fill: true
+            }));
+
+            charts.categoryChart = new Chart(ctx, {
+                type: 'radar',
+                data: {
+                    labels: Object.values(categories).map(cat => cat.name),
+                    datasets: datasets
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    plugins: {
+                        legend: {
+                            position: 'bottom',
+                            labels: {
+                                padding: 20,
+                                font: { size: 12, weight: 'bold' },
+                                usePointStyle: true
                             }
                         }
                     },
-                    animation: {
-                        duration: 1000,
-                        easing: 'easeInOutQuart'
+                    scales: {
+                        r: {
+                            beginAtZero: true,
+                            grid: { color: 'rgba(0, 0, 0, 0.1)' },
+                            angleLines: { color: 'rgba(0, 0, 0, 0.1)' },
+                            pointLabels: { font: { size: 11, weight: 'bold' } }
+                        }
+                    },
+                    animation: { duration: 1200 }
+                }
+            });
+        }
+
+        // Event participation chart
+        function updateParticipationChart() {
+            const ctx = document.getElementById('participationChart');
+            if (!ctx) return;
+
+            const eventParticipation = {};
+
+            Object.keys(allData.individual).forEach(category => {
+                allData.individual[category].forEach(result => {
+                    const event = result.event_name;
+                    if (event) {
+                        eventParticipation[event] = (eventParticipation[event] || 0) + 1;
                     }
+                });
+                allData.group[category].forEach(result => {
+                    const event = result.event_name;
+                    if (event) {
+                        eventParticipation[event] = (eventParticipation[event] || 0) + 1;
+                    }
+                });
+            });
+
+            const sortedEvents = Object.entries(eventParticipation)
+                .sort(([,a], [,b]) => b - a)
+                .slice(0, 10);
+
+            if (charts.participationChart) {
+                charts.participationChart.destroy();
+            }
+
+            charts.participationChart = new Chart(ctx, {
+                type: 'bar',
+                data: {
+                    labels: sortedEvents.map(([event]) => event.length > 15 ? event.substring(0, 15) + '...' : event),
+                    datasets: [{
+                        label: 'Participants',
+                        data: sortedEvents.map(([,count]) => count),
+                        backgroundColor: 'rgba(79, 70, 229, 0.7)',
+                        borderColor: 'rgba(79, 70, 229, 1)',
+                        borderWidth: 2,
+                        borderRadius: 6
+                    }]
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    indexAxis: 'y',
+                    plugins: {
+                        legend: { display: false },
+                        tooltip: {
+                            backgroundColor: 'rgba(0, 0, 0, 0.8)',
+                            titleColor: '#ffffff',
+                            bodyColor: '#ffffff',
+                            cornerRadius: 8
+                        }
+                    },
+                    scales: {
+                        x: {
+                            beginAtZero: true,
+                            ticks: { stepSize: 1 },
+                            grid: { color: 'rgba(0, 0, 0, 0.1)' }
+                        },
+                        y: {
+                            grid: { display: false }
+                        }
+                    },
+                    animation: { duration: 1000 }
+                }
+            });
+        }
+
+        // Individual vs Group chart
+        function updateTypeChart() {
+            const ctx = document.getElementById('typeChart');
+            if (!ctx) return;
+
+            let individualCount = 0;
+            let groupCount = 0;
+
+            Object.keys(allData.individual).forEach(category => {
+                individualCount += allData.individual[category].length;
+            });
+
+            Object.keys(allData.group).forEach(category => {
+                groupCount += allData.group[category].length;
+            });
+
+            if (charts.typeChart) {
+                charts.typeChart.destroy();
+            }
+
+            charts.typeChart = new Chart(ctx, {
+                type: 'pie',
+                data: {
+                    labels: ['👤 Individual', '👥 Group'],
+                    datasets: [{
+                        data: [individualCount, groupCount],
+                        backgroundColor: ['#3b82f6', '#10b981'],
+                        borderWidth: 3,
+                        borderColor: '#ffffff',
+                        hoverBorderWidth: 5
+                    }]
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    plugins: {
+                        legend: {
+                            position: 'bottom',
+                            labels: {
+                                padding: 20,
+                                font: { size: 14, weight: 'bold' },
+                                usePointStyle: true,
+                                pointStyle: 'circle'
+                            }
+                        },
+                        tooltip: {
+                            backgroundColor: 'rgba(0, 0, 0, 0.8)',
+                            titleColor: '#ffffff',
+                            bodyColor: '#ffffff',
+                            cornerRadius: 8,
+                            callbacks: {
+                                label: function(context) {
+                                    const total = context.dataset.data.reduce((a, b) => a + b, 0);
+                                    const percentage = ((context.parsed / total) * 100).toFixed(1);
+                                    return `${context.label}: ${context.parsed} (${percentage}%)`;
+                                }
+                            }
+                        }
+                    },
+                    animation: { duration: 1500 }
+                }
+            });
+        }
+
+        // Class participation chart
+        function updateClassChart() {
+            const ctx = document.getElementById('classChart');
+            if (!ctx) return;
+
+            const classData = {};
+
+            Object.keys(allData.individual).forEach(category => {
+                allData.individual[category].forEach(result => {
+                    const className = result.class;
+                    if (className) {
+                        classData[className] = (classData[className] || 0) + 1;
+                    }
+                });
+                allData.group[category].forEach(result => {
+                    const className = result.class;
+                    if (className) {
+                        classData[className] = (classData[className] || 0) + 1;
+                    }
+                });
+            });
+
+            const sortedClasses = Object.entries(classData)
+                .sort(([a], [b]) => {
+                    const numA = parseInt(a) || 0;
+                    const numB = parseInt(b) || 0;
+                    return numA - numB;
+                });
+
+            if (charts.classChart) {
+                charts.classChart.destroy();
+            }
+
+            charts.classChart = new Chart(ctx, {
+                type: 'line',
+                data: {
+                    labels: sortedClasses.map(([className]) => `Class ${className}`),
+                    datasets: [{
+                        label: 'Participants',
+                        data: sortedClasses.map(([,count]) => count),
+                        borderColor: 'rgba(16, 185, 129, 1)',
+                        backgroundColor: 'rgba(16, 185, 129, 0.1)',
+                        borderWidth: 3,
+                        fill: true,
+                        tension: 0.4,
+                        pointBackgroundColor: 'rgba(16, 185, 129, 1)',
+                        pointBorderColor: '#ffffff',
+                        pointBorderWidth: 2,
+                        pointRadius: 6,
+                        pointHoverRadius: 8
+                    }]
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    plugins: {
+                        legend: { display: false },
+                        tooltip: {
+                            backgroundColor: 'rgba(0, 0, 0, 0.8)',
+                            titleColor: '#ffffff',
+                            bodyColor: '#ffffff',
+                            cornerRadius: 8
+                        }
+                    },
+                    scales: {
+                        y: {
+                            beginAtZero: true,
+                            ticks: { stepSize: 1 },
+                            grid: { color: 'rgba(0, 0, 0, 0.1)' }
+                        },
+                        x: {
+                            grid: { display: false }
+                        }
+                    },
+                    animation: { duration: 1200 }
                 }
             });
         }
