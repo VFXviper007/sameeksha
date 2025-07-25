@@ -47,6 +47,25 @@
             font-size: 1.1rem;
         }
 
+        .status-indicator {
+            display: inline-block;
+            margin-left: 10px;
+            padding: 4px 8px;
+            border-radius: 12px;
+            font-size: 0.8rem;
+            font-weight: 600;
+        }
+
+        .status-loading {
+            background: #fef3c7;
+            color: #92400e;
+        }
+
+        .status-updated {
+            background: #d1fae5;
+            color: #065f46;
+        }
+
         .nav-tabs {
             display: flex;
             justify-content: center;
@@ -306,6 +325,7 @@
             font-weight: 600;
             cursor: pointer;
             transition: all 0.2s ease;
+            margin-left: 10px;
         }
 
         .refresh-btn:hover {
@@ -349,8 +369,13 @@
     <div class="container">
         <div class="header">
             <h1>Sameeksha</h1>
-            <p>Live Results & Leaderboards</p>
-
+            <p>Live Results & Leaderboards 
+                <span id="statusIndicator" class="status-indicator status-loading">Loading...</span>
+                <button class="refresh-btn" onclick="manualRefresh()">🔄 Refresh</button>
+            </p>
+            <div style="font-size: 0.85rem; color: #64748b; margin-top: 10px;">
+                Last updated: <span id="lastUpdated">Never</span>
+            </div>
         </div>
 
         <nav class="nav-tabs">
@@ -492,21 +517,48 @@
             }
         }
 
-        // Load CSV data with updated column mapping
+        // Load CSV data with cache busting and better error handling
         async function loadCSV(filename) {
             try {
-                const response = await fetch(filename);
+                // Add cache busting parameter with more randomness
+                const cacheBuster = `${new Date().getTime()}_${Math.random().toString(36).substr(2, 9)}`;
+                const url = `${filename}?v=${cacheBuster}`;
+                
+                console.log(`Loading ${filename} at ${new Date().toLocaleTimeString()}`);
+                
+                const response = await fetch(url, {
+                    method: 'GET',
+                    cache: 'no-cache',
+                    headers: {
+                        'Cache-Control': 'no-cache, no-store, must-revalidate',
+                        'Pragma': 'no-cache',
+                        'Expires': '0'
+                    }
+                });
+                
                 if (!response.ok) {
-                    console.warn(`Could not load ${filename}: ${response.status}`);
+                    console.warn(`Could not load ${filename}: ${response.status} ${response.statusText}`);
                     return [];
                 }
+                
                 const csvText = await response.text();
+                console.log(`Loaded ${filename}: ${csvText.length} characters`);
+                
+                if (!csvText.trim()) {
+                    console.warn(`${filename} is empty`);
+                    return [];
+                }
+                
                 const result = Papa.parse(csvText, {
                     header: true,
                     skipEmptyLines: true,
                     dynamicTyping: false,
                     delimitersToGuess: [',', '\t', '|', ';']
                 });
+
+                if (result.errors && result.errors.length > 0) {
+                    console.warn(`Parse errors in ${filename}:`, result.errors);
+                }
 
                 // Clean headers and map to expected format
                 if (result.data.length > 0) {
@@ -527,15 +579,38 @@
                             position: cleanedRow.position || cleanedRow.Position || cleanedRow.rank || ''
                         };
                     });
-                    return cleanedData.filter(row =>
+                    
+                    const filteredData = cleanedData.filter(row =>
                         Object.values(row).some(value => value !== '')
                     );
+                    
+                    console.log(`Processed ${filename}: ${filteredData.length} valid records`);
+                    return filteredData;
                 }
                 return [];
             } catch (error) {
                 console.error(`Error loading ${filename}:`, error);
                 return [];
             }
+        }
+
+        // Update status indicator
+        function updateStatus(status, message) {
+            const indicator = document.getElementById('statusIndicator');
+            const lastUpdated = document.getElementById('lastUpdated');
+            
+            indicator.className = `status-indicator status-${status}`;
+            indicator.textContent = message;
+            
+            if (status === 'updated') {
+                lastUpdated.textContent = new Date().toLocaleTimeString();
+            }
+        }
+
+        // Manual refresh function
+        function manualRefresh() {
+            console.log('Manual refresh triggered');
+            loadAllData();
         }
 
         // Update event dropdown
@@ -565,6 +640,9 @@
 
         // Load all data
         async function loadAllData() {
+            console.log('Loading all data at:', new Date().toLocaleTimeString());
+            updateStatus('loading', 'Loading...');
+            
             const loadingElements = document.querySelectorAll('.loading');
             loadingElements.forEach(el => el.textContent = 'Loading...');
 
@@ -572,32 +650,46 @@
             allEvents.clear();
 
             try {
-                // Load individual results
+                let totalRecords = 0;
+                
+                // Load individual and group results for all categories
                 for (let i = 1; i <= 5; i++) {
                     const catKey = `cat${i}`;
-                    allData.individual[catKey] = await loadCSV(`${catKey}_individual.csv`);
-                    allData.group[catKey] = await loadCSV(`${catKey}_group.csv`);
+                    
+                    const individualData = await loadCSV(`${catKey}_individual.csv`);
+                    const groupData = await loadCSV(`${catKey}_group.csv`);
+                    
+                    allData.individual[catKey] = individualData;
+                    allData.group[catKey] = groupData;
+                    
+                    totalRecords += individualData.length + groupData.length;
 
                     // Collect all event names
-                    allData.individual[catKey].forEach(result => {
+                    individualData.forEach(result => {
                         if (result.event_name && result.event_name.trim() !== '') {
                             allEvents.add(result.event_name.trim());
                         }
                     });
-                    allData.group[catKey].forEach(result => {
+                    groupData.forEach(result => {
                         if (result.event_name && result.event_name.trim() !== '') {
                             allEvents.add(result.event_name.trim());
                         }
                     });
                 }
 
+                console.log(`Loaded ${totalRecords} total records, ${allEvents.size} unique events`);
+
                 updateEventDropdown();
                 updateLeaderboard();
                 updateResults();
                 updateCategoryBreakdown();
                 updateChart();
+                
+                updateStatus('updated', `Updated (${totalRecords} records)`);
+                
             } catch (error) {
                 console.error('Error loading data:', error);
+                updateStatus('loading', 'Error loading');
                 loadingElements.forEach(el => el.textContent = 'Error loading data. Please check if CSV files are available.');
             }
         }
